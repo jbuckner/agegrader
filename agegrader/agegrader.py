@@ -1,8 +1,8 @@
 from __future__ import division
 import json
-import operator
 
-from .utils import kilometers_to_miles
+from .utils import (next_highest_in_list, next_lowest_in_list,
+                    kilometers_to_miles)
 
 
 class AgeGrader(object):
@@ -17,119 +17,169 @@ class AgeGrader(object):
 
     Usage:
 
-    age_grader = AgeGrader(age, gender, km)
+    age_grader = AgeGrader()
 
-    age_grader.age_graded_performance_factor
+    age_grader.age_graded_performance_factor(age, gender, distance, seconds)
     - the age graded performance factor as a decimal (.83 = 83%)
 
-    age_grader.age_graded_finish_time
+    age_grader.age_graded_finish_time(age, gender, distance, seconds)
     - the age graded finish time in seconds
 
-    age_grader.age_graded_page
+    age_grader.age_graded_seconds_per_mile(age, gender, distance, seconds)
     - the age graded pace in seconds per mile
 
-    age_grader.age_gender_distance_record
+    age_grader.age_gender_distance_record(age, gender, distance)
     - returns the adjusted record for the given age, gender, and distance
 
-    age_grader.gender_distance_record
+    age_grader.gender_distance_record(gender, distance)
     - this is the "world record" for the distance
     - returns the adjusted record for the given gender and distance
-    """
-    def __init__(self, age, gender, km, seconds):
-        super(AgeGrader, self).__init__()
-        self.age = age
-        self.gender = gender
-        self.distance_in_km = km
-        self.seconds = seconds
-        with open('agegrader/age_grading_data.json') as data_file:
-            self.age_grading_data = json.load(data_file)
 
-    @property
-    def age_graded_performance_factor(self):
+    Advanced Usage:
+
+    Custom data file:
+
+    with open('path/to/custom_data.json') as dat:
+        a = AgeGrader(dat)
+        a.age_graded_performance_factor(age, gender, distance, seconds)
+    """
+    def __init__(self, data_file=None):
+        super(AgeGrader, self).__init__()
+        if data_file:
+            self.age_grading_data = json.load(data_file)
+        else:
+            with open('agegrader/age_grading_data.json') as dat:
+                self.age_grading_data = json.load(dat)
+        self.distances = list(set([entry['distance'] for entry
+                                   in self.age_grading_data]))
+
+    def age_graded_performance_factor(self, age, gender, distance, seconds):
         """
         Age-graded performance factor as a decimal. For instance .83 = 83%
 
-        """
-        return self.age_gender_distance_record / self.seconds
+        Returns None if age data not available
 
-    @property
-    def age_graded_finish_time(self):
+        """
+        age_gender_distance_record = self.age_gender_distance_record(
+            age, gender, distance)
+        if age_gender_distance_record:
+            return age_gender_distance_record / seconds
+        return None
+
+    def age_graded_finish_time(self, age, gender, distance, seconds):
         """
         Age-graded finish time in seconds
 
-        """
-        return self.gender_distance_record / self.age_graded_performance_factor
+        Returns None if age data not available
 
-    @property
-    def age_graded_seconds_per_mile(self):
+        """
+        gdr = self.gender_distance_record(gender, distance)
+        agpf = self.age_graded_performance_factor(age, gender, distance,
+                                                  seconds)
+        if agpf:
+            return gdr / agpf
+        return None
+
+    def age_graded_seconds_per_mile(self, age, gender, distance, seconds):
         """
         Age-graded pace in seconds per mile
 
-        """
-        miles = kilometers_to_miles(self.distance_in_km)
-        seconds_per_mile = self.age_graded_finish_time / miles
-        return seconds_per_mile
+        Returns None if age data not available
 
-    @property
-    def age_gender_distance_record(self):
+        """
+        miles = kilometers_to_miles(distance)
+        agft = self.age_graded_finish_time(age, gender, distance, seconds)
+        if agft:
+            seconds_per_mile = agft / miles
+            return seconds_per_mile
+        return None
+
+    def age_gender_distance_record(self, age, gender, distance):
         """
         World record in seconds for given age, gender, and distance
 
+        Returns None if age data not available
+
         """
-        lower_ages = self.__next_lower_distance['ages']
-        higher_ages = self.__next_higher_distance['ages']
+        lower_gender_distance = self.__lower_distance_entry(gender, distance)
+        higher_gender_distance = self.__higher_distance_entry(gender, distance)
 
-        lower_age = (
-            item for item in lower_ages if item['age'] == self.age).next()
-        higher_age = (
-            item for item in higher_ages if item['age'] == self.age).next()
+        lower_ages = lower_gender_distance['ages']
+        higher_ages = higher_gender_distance['ages']
 
-        lower_seconds = lower_age['seconds']
-        higher_seconds = higher_age['seconds']
+        lower_age = list(item for item in lower_ages if item['age'] == age)
+        higher_age = list(item for item in higher_ages if item['age'] == age)
+
+        if len(lower_age) is 0 or len(higher_age) is 0:
+            return None
+
+        lower_seconds = lower_age[0]['seconds']
+        higher_seconds = higher_age[0]['seconds']
         diff = higher_seconds - lower_seconds
-        adjusted = lower_seconds + (diff * self.__distance_ratio)
+        distance_ratio = self.__distance_ratio(distance)
+        adjusted = lower_seconds + (diff * distance_ratio)
         return adjusted
 
-    @property
-    def gender_distance_record(self):
+    def gender_distance_record(self, gender, distance):
         """
         World record in seconds for given gender and distance.
 
         """
-        lower_record = self.__next_lower_distance.seconds
-        upper_record = self.__next_higher_distance.seconds
+        lower_gender_distance = self.__lower_distance_entry(gender, distance)
+        higher_gender_distance = self.__higher_distance_entry(gender, distance)
+
+        lower_record = lower_gender_distance['seconds']
+        upper_record = higher_gender_distance['seconds']
+
         diff = upper_record - lower_record
-        delta = self.__distance_ratio * diff
+        delta = self.__distance_ratio(distance) * diff
         value = lower_record + delta
         return value
 
-    @property
-    def __next_higher_distance(self):
+    def __higher_distance_entry(self, gender, distance):
         """
-        The next greater or equal distance from km.
+        Return the next highest entry from the data
 
         """
-        self.age_grading_data.sort(key=operator.itemgetter('distance'))
-        for distance in self.age_grading_data:
-            if distance['distance'] >= self.distance_in_km:
-                return distance
-        return self.age_grading_data[-1]
+        next_higher_distance = self.__next_higher_distance(distance)
+        higher_gender_distance = self.__gender_distance_entry(
+            gender, next_higher_distance)
+        return higher_gender_distance
 
-    @property
-    def __next_lower_distance(self):
+    def __lower_distance_entry(self, gender, distance):
         """
-        The next lower or equal distance from km.
+        Return the next lowest entry from the data
 
         """
-        self.age_grading_data.sort(key=operator.itemgetter('distance'),
-                                   reverse=True)
-        for distance in self.age_grading_data:
-            if distance['distance'] <= self.distance_in_km:
-                return distance
-        return self.age_grading_data[-1]
+        next_lower_distance = self.__next_lower_distance(distance)
+        lower_gender_distance = self.__gender_distance_entry(
+            gender, next_lower_distance)
+        return lower_gender_distance
 
-    @property
-    def __distance_ratio(self):
+    def __gender_distance_entry(self, gender, distance):
+        """
+        Return a gender distance entry from the data
+
+        """
+        return (entry for entry in self.age_grading_data
+                if entry['gender'] == gender and
+                entry['distance'] == distance).next()
+
+    def __next_higher_distance(self, distance):
+        """
+        Return the next highest distance from the list of data points
+
+        """
+        return next_highest_in_list(self.distances, distance)
+
+    def __next_lower_distance(self, distance):
+        """
+        Return the next lowest distance from the list of data points
+
+        """
+        return next_lowest_in_list(self.distances, distance)
+
+    def __distance_ratio(self, distance):
         """
         The distance ratio of km between upper_distance and lower_distance
 
@@ -144,11 +194,11 @@ class AgeGrader(object):
         example, but you get the idea.
 
         """
-        lower_distance = self.__next_lower_distance['distance']
-        upper_distance = self.__next_higher_distance['distance']
+        lower_distance = self.__next_lower_distance(distance)
+        upper_distance = self.__next_higher_distance(distance)
         diff = upper_distance - lower_distance
         if diff == 0:
             return 0
-        delta = self.distance_in_km - lower_distance
+        delta = distance - lower_distance
         ratio = delta / diff
         return ratio

@@ -8,9 +8,17 @@ class AgeGraderTestSuite(unittest.TestCase):
     """Basic test cases."""
 
     def test_age_grader(self):
-        a = AgeGrader(15, 'M', 5.0, 1234)
-        rounded = round(a.age_graded_performance_factor, 3)
+        a = AgeGrader()
+        agfp = a.age_graded_performance_factor(15, 'M', 5.0, 1234)
+        rounded = round(agfp, 3)
         assert rounded == 0.654
+
+    def test_age_grader_2(self):
+        with open('tests/test_data.json') as dat:
+            a = AgeGrader(dat)
+        agfp = a.age_graded_performance_factor(15, 'M', 5.0, 1234)
+        rounded = round(agfp, 3)
+        assert rounded == 0
 
 if __name__ == '__main__':
     unittest.main()

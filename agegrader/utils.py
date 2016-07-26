@@ -10,3 +10,19 @@ def miles_to_kilometers(miles):
 
 def kilometers_to_miles(km):
     return km * 0.621371
+
+
+def next_highest_in_list(number_list, target):
+    number_list.sort()
+    for number in number_list:
+        if number >= target:
+            return number
+    return number_list[-1]
+
+
+def next_lowest_in_list(number_list, target):
+    number_list.sort(reverse=True)
+    for number in number_list:
+        if number <= target:
+            return number
+    return number_list[-1]
