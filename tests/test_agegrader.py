@@ -7,18 +7,17 @@ from agegrader.agegrader import AgeGrader
 class AgeGraderTestSuite(unittest.TestCase):
     """Basic test cases."""
 
-    def test_age_grader(self):
+    def test_age_grader_returns_expected_performance_factor(self):
         a = AgeGrader()
         agfp = a.age_graded_performance_factor(15, 'M', 5.0, 1234)
         rounded = round(agfp, 3)
         assert rounded == 0.654
 
-    def test_age_grader_2(self):
+    def test_age_grader_returns_none_if_age_not_found(self):
         with open('tests/test_data.json') as dat:
             a = AgeGrader(dat)
         agfp = a.age_graded_performance_factor(15, 'M', 5.0, 1234)
-        rounded = round(agfp, 3)
-        assert rounded == 0
+        assert agfp == None
 
 if __name__ == '__main__':
     unittest.main()

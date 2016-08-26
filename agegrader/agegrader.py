@@ -9,12 +9,6 @@ class AgeGrader(object):
     """
     This calculates age graded performance, finish times, and paces.
 
-    It uses an estimation method to adjust for missing data points. For
-    instance, there is no data for 4.5-mile races. There are 4 and 5-mile
-    tables, though. Using them, this finds the distance delta between available
-    data and based on that percentage, estimates the world record for the given
-    distance.
-
     Usage:
 
     age_grader = AgeGrader()
