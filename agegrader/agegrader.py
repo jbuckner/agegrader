@@ -1,5 +1,6 @@
 from __future__ import division
 import json
+import os
 
 from .utils import (next_highest_in_list, next_lowest_in_list,
                     kilometers_to_miles)
@@ -42,7 +43,8 @@ class AgeGrader(object):
         if data_file:
             self.age_grading_data = json.load(data_file)
         else:
-            with open('agegrader/age_grading_data.json') as dat:
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            with open('{}/age_grading_data.json'.format(dir_path)) as dat:
                 self.age_grading_data = json.load(dat)
         self.distances = list(set([entry['distance'] for entry
                                    in self.age_grading_data]))
@@ -156,7 +158,7 @@ class AgeGrader(object):
 
         """
         return next(entry for entry in self.age_grading_data
-                    if entry['gender'] == gender and
+                    if entry['gender'] == gender.upper() and
                     entry['distance'] == distance)
 
     def __next_higher_distance(self, distance):
