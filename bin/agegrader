@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import argparse
+from agegrader.agegrader import AgeGrader
+
+parser = argparse.ArgumentParser()
+parser.add_argument('age', help='athlete\'s age', type=int)
+parser.add_argument('gender', help='M or F', choices=['m', 'f', 'M', 'F'])
+parser.add_argument('distance_in_km', help='distance in kilometers', type=int)
+parser.add_argument('finish_time_in_seconds', help='finish time in seconds', type=int)
+parser.add_argument('--file_path', help='optional data file path to override the default data')
+
+args = parser.parse_args()
+
+if 'file_path' in args:
+	ag = AgeGrader(data_file=args.file_path)
+else:
+	ag = AgeGrader()
+
+age = args.age
+gender = args.gender
+distance = args.distance_in_km
+seconds = args.finish_time_in_seconds
+
+agpf = ag.age_graded_performance_factor(age, gender.upper(), distance, seconds)
+percentage = round(agpf * 100, 1)
+
+agft = ag.age_graded_finish_time(age, gender.upper(), distance, seconds)
+finish_seconds = round(agft % 60)
+finish_minutes = round(agft / 60)
+finish_time_string = '{}:{}'.format(finish_minutes, finish_seconds)
+
+afspm = ag.age_graded_seconds_per_mile(age, gender.upper(), distance, seconds)
+pace_seconds = round(afspm % 60)
+pace_minute = round(afspm / 60)
+pace_string = '{}:{}/mile'.format(pace_minute, pace_seconds)
+
+print('Age Graded Performance: {}% {} {}'.format(
+    percentage, finish_time_string, pace_string))

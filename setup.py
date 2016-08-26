@@ -1,5 +1,5 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 from setuptools import setup, find_packages
 
 
@@ -23,5 +23,6 @@ setup(
     package_data={
         'agegrader': ['age_grading_data.json'],
     },
+    scripts=['bin/agegrader'],
 
 )
