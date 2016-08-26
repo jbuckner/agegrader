@@ -161,9 +161,9 @@ class AgeGrader(object):
         Return a gender distance entry from the data
 
         """
-        return (entry for entry in self.age_grading_data
-                if entry['gender'] == gender and
-                entry['distance'] == distance).next()
+        return next(entry for entry in self.age_grading_data
+                    if entry['gender'] == gender and
+                    entry['distance'] == distance)
 
     def __next_higher_distance(self, distance):
         """
