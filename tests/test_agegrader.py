@@ -17,7 +17,8 @@ class AgeGraderTestSuite(unittest.TestCase):
         with open('tests/test_data.json') as dat:
             a = AgeGrader(dat)
         agfp = a.age_graded_performance_factor(15, 'M', 5.0, 1234)
-        assert agfp == None
+        assert agfp is None
+
 
 if __name__ == '__main__':
     unittest.main()

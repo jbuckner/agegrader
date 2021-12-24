@@ -106,7 +106,7 @@ class AgeGrader(object):
         lower_age = list(item for item in lower_ages if item['age'] == age)
         higher_age = list(item for item in higher_ages if item['age'] == age)
 
-        if len(lower_age) is 0 or len(higher_age) is 0:
+        if len(lower_age) == 0 or len(higher_age) == 0:
             return None
 
         lower_seconds = lower_age[0]['seconds']
